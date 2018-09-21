@@ -5,6 +5,8 @@ import mysql
 from mysql import connector
 import os
 import sys
+import time
+import shutil
 
 #  py文件当前路径
 path = os.getcwd()
@@ -24,9 +26,12 @@ def read_sql_file():
     for file in files:
         if not os.path.isdir(file) and (".txt" in file or ".sql" in file):
             print(file)
-            sql = open(file,'r', encoding='UTF-8').read()
-            str_sql[file]=sql
+            with open(file,'r', encoding='UTF-8') as f:
+                sql = f.read()
+            # sql = open(file,'r', encoding='UTF-8').read()
+            str_sql[file] = sql
 
+            f.close()
     return str_sql
 
 #  执行sql
@@ -122,6 +127,9 @@ def execute_sql():
     cursor.close()
     print("关闭数据库游标")
 
+    # 修改sql文件的名字,并移动到当前目录的executed文件夹中
+    rename_and_remove_sql_file(sql_dict)
+    print("修改sql文件的名字,并移动到当前目录的executed文件夹中")
 
 def get_mysql_configs():
     # 创建一个配置操作对象
@@ -156,6 +164,32 @@ def get_dbs():
           }
     return  dbs
 
+def rename_and_remove_sql_file(files):
+
+    # 保存已经执行sql的目录
+    executed_path = "./executed"
+
+    # 如果保存sql的目录不存在,那就创建它
+    if not os.path.exists(executed_path):
+        os.mkdir(executed_path)
+
+    # 获取当前目录下面包含sql和txt的文件
+    # files = files
+
+    for file in files:
+
+        executed_time = time.strftime('%Y-%m-%d_%H-%M-%S', time.localtime(time.time()))
+
+        # 执行后的文件名
+        executed_file = "executed_at_"+executed_time+"_"+file
+
+        # 重命名已经执行的文件
+        os.rename(file,executed_file)
+
+        # 把已经执行的文件移动到保存sql的目录下
+        shutil.move(executed_file,executed_path)
+
+
 if __name__ == '__main__':
 
     # 连接数据库
@@ -163,6 +197,9 @@ if __name__ == '__main__':
 
     # 调用直接sql的方法
     execute_sql()
+
+
+    # rename_and_remove_sql_file()
 
     # 关闭数据库连接
     conn.close()
